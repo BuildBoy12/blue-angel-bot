@@ -1,28 +1,40 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using Discord;
+using Newtonsoft.Json;
 
 namespace BlueAngel
 {
     public class Program
     {
-        static void Main(string[] args)
+        public static Bot _bot;
+        public static Config Config = GetConfig();
+        public static bool fileLocked = false;
+        private static string LogFile;
+
+        static void Main()
         {
-            Console.WriteLine("Wassup homie!");
             new Program();
         }
 
         public Program()
         {
-            Console.WriteLine("Initializing..");
+            string path = $"{Directory.GetCurrentDirectory()}/logs/{DateTime.UtcNow.Ticks}.txt";
+            Log($"Creating log file: {path}", true);
+            if (!Directory.Exists($"{Directory.GetCurrentDirectory()}/logs"))
+                Directory.CreateDirectory($"{Directory.GetCurrentDirectory()}/logs");
+            if (!File.Exists(path))
+                File.Create(path).Close();
+            LogFile = path;
             _bot = new Bot(this);
         }
 
         public static Config GetConfig()
         {
-            bool flag = File.Exists("Config.json");
             Config result;
-            if (flag)
+            if (File.Exists("Config.json"))
             {
                 result = JsonConvert.DeserializeObject<Config>(File.ReadAllText("Config.json"));
             }
@@ -34,10 +46,30 @@ namespace BlueAngel
             return result;
         }
 
-        public static Bot _bot;
+        public static Task Log(LogMessage msg)
+        {
+            Console.Write(msg.ToString() + Environment.NewLine);
+            while (fileLocked)
+                Thread.Sleep(1000);
 
-        public static Config Config = GetConfig();
+            if (LogFile != null)
+            {
+                fileLocked = true;
+                File.AppendAllText(LogFile, msg.ToString() + Environment.NewLine);
+            }
 
-        public static bool fileLocked = false;
+            fileLocked = false;
+            return Task.CompletedTask;
+        }
+
+        public static void Log(string message, bool debug = false)
+        {
+            if (!debug)
+                Log(new LogMessage(LogSeverity.Info, "LOG", message));
+            else if (Config.Debug)
+                Log(new LogMessage(LogSeverity.Debug, "DEBUG", message));
+        }
+
+        public static void Error(string message) => Log(new LogMessage(LogSeverity.Debug, "ERROR", message));
     }
 }
