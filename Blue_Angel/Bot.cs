@@ -186,10 +186,9 @@ namespace BlueAngel
 						{
 						{ "help", "It's the help about the help to help you." },
 						{ "ping", "Replies with the bots current latency." },
-						{ "view", "Subcommands: [view.clan, view.player, view.top]"},
-						{ "view.clan", "A lookup tool for this and other clans statistics.\nUsage: view clan [Clan ID]\nExample: view clan #2VPJQP0J" },
-						{ "view.player", "A lookup tool for player statistics.\nUsage: view player {Player ID}\nExample: view player #J8R2QQ98" },
-						{ "view.top", "Shows top players in the clan for the specified option.\nUsage: view top {donations/trophies/bhtrophies}\nExample: view top donations" },
+						{ "clan", "A lookup tool for this and other clans statistics.\nUsage: view clan [Clan ID]\nExample: view clan #2VPJQP0J" },
+						{ "player", "A lookup tool for player statistics.\nUsage: view player {Player ID}\nExample: view player #J8R2QQ98" },
+						{ "top", "Shows top players in the clan for the specified option.\nUsage: view top {donations/trophies/bhtrophies}\nExample: view top donations" },
 						};
 						embed.WithTitle("Help");
 						try
@@ -213,64 +212,49 @@ namespace BlueAngel
 						}
 						await ctx.Channel.SendMessageAsync(null, false, embed.Build());
 						break;
-					case "view":
+					case "clan":
 						try
 						{
-							switch (args[1])
-							{
-								case "clan":
-									try
-									{
-										try { if (args[2] != null) clan = await coc.Clans.GetClanAsync(args[2]); }
-										catch (ArgumentException) { try { clan = await coc.Clans.GetClanAsync("#" + args[2]); } catch (ClashOfClans.Core.ClashOfClansException) { await ctx.Channel.SendMessageAsync("Please enter a valid clan ID."); return; } }
-										catch (ClashOfClans.Core.ClashOfClansException) { await ctx.Channel.SendMessageAsync("Please enter a valid clan ID."); return; }
-										catch (IndexOutOfRangeException) { }
+							try { if (args[1] != null) clan = await coc.Clans.GetClanAsync(args[2]); }
+							catch (ArgumentException) { try { clan = await coc.Clans.GetClanAsync("#" + args[1]); } catch (ClashOfClans.Core.ClashOfClansException) { await ctx.Channel.SendMessageAsync("Please enter a valid clan ID."); return; } }
+							catch (ClashOfClans.Core.ClashOfClansException) { await ctx.Channel.SendMessageAsync("Please enter a valid clan ID."); return; }
+							catch (IndexOutOfRangeException) { }
 
-										embed.WithTitle(clan.Name);
-										embed.WithThumbnailUrl(clan.BadgeUrls.Medium.ToString());
-										embed.AddField("Clan Tag", clan.Tag);
-										embed.AddField("War Win Streak", clan.WarWinStreak);
-										embed.AddField("War Wins", clan.WarWins);
-										embed.AddField("War Losses", (bool)clan.IsWarLogPublic ? clan.WarLosses.ToString() : "War log hidden.");
-										embed.AddField("War Ties", (bool)clan.IsWarLogPublic ? clan.WarTies.ToString() : "War log hidden.");
-										await ctx.Channel.SendMessageAsync(null, false, embed.Build());
-									}
-									catch (Exception e)
-									{
-										Program.Error("View.Clan Error: " + e);
-										await ctx.Channel.SendMessageAsync("<@250429949410934786> An internal error has occured.");
-									}
-									break;
-								case "player":
-									try
-									{
-										await ctx.Channel.SendMessageAsync("Command is currently under construction!");
-									}
-									catch (Exception e)
-									{
-										Program.Error("View.Player Error " + e);
-										await ctx.Channel.SendMessageAsync("<@250429949410934786> An internal error has occured.");
-									}
-									break;
-								case "top":
-									try
-									{
-										await ctx.Channel.SendMessageAsync("Command is currently under construction!");
-									}
-									catch (Exception e)
-									{
-										Program.Error("View.Top Error " + e);
-										await ctx.Channel.SendMessageAsync("<@250429949410934786> An internal error has occured.");
-									}
-									break;
-								default:
-									await ctx.Channel.SendMessageAsync("Please select a valid subcommand! Use help for more info.");
-									break;
-							}
+							embed.WithTitle(clan.Name);
+							embed.WithThumbnailUrl(clan.BadgeUrls.Medium.ToString());
+							embed.AddField("Clan Tag", clan.Tag);
+							embed.AddField("War Win Streak", clan.WarWinStreak);
+							embed.AddField("War Wins", clan.WarWins);
+							embed.AddField("War Losses", (bool)clan.IsWarLogPublic ? clan.WarLosses.ToString() : "War log hidden.");
+							embed.AddField("War Ties", (bool)clan.IsWarLogPublic ? clan.WarTies.ToString() : "War log hidden.");
+							await ctx.Channel.SendMessageAsync(null, false, embed.Build());
 						}
-						catch (IndexOutOfRangeException)
+						catch (Exception e)
 						{
-							await ctx.Channel.SendMessageAsync("Please select a valid subcommand! Use help for more info.");
+							Program.Error("Clan Error: " + e);
+							await ctx.Channel.SendMessageAsync("<@250429949410934786> An internal error has occured.");
+						}
+						break;
+					case "player":
+						try
+						{
+							await ctx.Channel.SendMessageAsync("Command is currently under construction!");
+						}
+						catch (Exception e)
+						{
+							Program.Error("Player Error " + e);
+							await ctx.Channel.SendMessageAsync("<@250429949410934786> An internal error has occured.");
+						}
+						break;
+					case "top":
+						try
+						{
+							await ctx.Channel.SendMessageAsync("Command is currently under construction!");
+						}
+						catch (Exception e)
+						{
+							Program.Error("Top Error " + e);
+							await ctx.Channel.SendMessageAsync("<@250429949410934786> An internal error has occured.");
 						}
 						break;
 					case "remind":
