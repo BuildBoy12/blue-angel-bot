@@ -146,7 +146,6 @@ namespace BlueAngel
 							Program.Error("CWL Check Exception: " + exce);
 						}
 						#endregion
-
 					}
 					await Task.Delay(30000);
 				}
@@ -215,7 +214,7 @@ namespace BlueAngel
 					case "clan":
 						try
 						{
-							try { if (args[1] != null) clan = await coc.Clans.GetClanAsync(args[2]); }
+							try { if (args[1] != null) clan = await coc.Clans.GetClanAsync(args[1]); }
 							catch (ArgumentException) { try { clan = await coc.Clans.GetClanAsync("#" + args[1]); } catch (ClashOfClans.Core.ClashOfClansException) { await ctx.Channel.SendMessageAsync("Please enter a valid clan ID."); return; } }
 							catch (ClashOfClans.Core.ClashOfClansException) { await ctx.Channel.SendMessageAsync("Please enter a valid clan ID."); return; }
 							catch (IndexOutOfRangeException) { }
