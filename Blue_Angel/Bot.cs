@@ -64,27 +64,30 @@ namespace BlueAngel
 				Program.Log("Starting loop.");
 				#region CWL start so that the new round msg isnt announced on bot start
 				try
-				{ 
-					ClanWarLeagueGroup leagueGroup = await coc.Clans.GetClanWarLeagueGroupAsync(BAClanTag);
-					Dictionary<float, List<string>> perRoundTags = new Dictionary<float, List<string>>();
-					List<string> mainTag = new List<string>();
-					float curRound = 1;
-					foreach (ClanWarLeagueRound round in leagueGroup.Rounds)
-					{
-						List<string> validTags = new List<string>();
-						foreach (string tag in round.WarTags)
+				{
+					if ((bool)clan.IsWarLogPublic)
+                    {
+						ClanWarLeagueGroup leagueGroup = await coc.Clans.GetClanWarLeagueGroupAsync(BAClanTag);
+						Dictionary<float, List<string>> perRoundTags = new Dictionary<float, List<string>>();
+						List<string> mainTag = new List<string>();
+						float curRound = 1;
+						foreach (ClanWarLeagueRound round in leagueGroup.Rounds)
 						{
-							validTags.Add(tag);
+							List<string> validTags = new List<string>();
+							foreach (string tag in round.WarTags)
+							{
+								validTags.Add(tag);
+							}
+							perRoundTags.Add(curRound, validTags);
+							curRound++;
 						}
-						perRoundTags.Add(curRound, validTags);
-						curRound++;
-					}
-					foreach (float key in perRoundTags.Keys)
-					{
-						perRoundTags.TryGetValue(key, out List<string> temp);
-						if (temp.Last() != "#0") mainTag.Add(temp.Last());
-					}
-					prevRound = mainTag.Count();
+						foreach (float key in perRoundTags.Keys)
+						{
+							perRoundTags.TryGetValue(key, out List<string> temp);
+							if (temp.Last() != "#0") mainTag.Add(temp.Last());
+						}
+						prevRound = mainTag.Count();
+					}					
 				} 
 				catch (ClashOfClansException)
 				{
