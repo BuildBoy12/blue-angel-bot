@@ -2,6 +2,7 @@
 using Discord.WebSocket;
 using System.Threading.Tasks;
 using System;
+using System.Linq;
 
 namespace BlueAngel
 {
@@ -14,12 +15,20 @@ namespace BlueAngel
                 SocketGuild curServer = Bot.Client.GetGuild(server);
                 SocketTextChannel curChannel = curServer.GetTextChannel(channel);
                 await curChannel.SendMessageAsync(message, isTTS, embed);
-                Program.Log($"Message sent to {curServer.Name}, {curChannel.Name}: {message}.", true);
+                Program.Log($"Message sent to {curServer.Name}, {curChannel.Name}: {message}", true);
             }
             catch(NullReferenceException)
             {
                 Program.Error("Unable to reach server.");
             }          
         }
+
+        public static string FirstCharToUpper(this string input) =>
+        input switch
+        {
+            null => throw new ArgumentNullException(nameof(input)),
+            "" => throw new ArgumentException($"{nameof(input)} cannot be empty", nameof(input)),
+            _ => input.First().ToString().ToUpper() + input.Substring(1)
+        };
     }
 }

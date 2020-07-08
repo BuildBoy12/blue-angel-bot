@@ -25,6 +25,8 @@ namespace BlueAngel
             Log($"Creating log file: {path}", true);
             if (!Directory.Exists($"{Directory.GetCurrentDirectory()}/logs"))
                 Directory.CreateDirectory($"{Directory.GetCurrentDirectory()}/logs");
+            if (!Directory.Exists($"{Directory.GetCurrentDirectory()}/reminders"))
+                Directory.CreateDirectory($"{Directory.GetCurrentDirectory()}/reminders");
             if (!File.Exists(path))
                 File.Create(path).Close();
             LogFile = path;

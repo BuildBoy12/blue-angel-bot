@@ -8,6 +8,8 @@ using ClashOfClans;
 using ClashOfClans.Models;
 using System.Linq;
 using System.Threading;
+using ClashOfClans.Core;
+using System.IO;
 
 namespace BlueAngel
 {
@@ -41,7 +43,7 @@ namespace BlueAngel
 			Client.MessageReceived += OnMessageReceived;
 			await Client.LoginAsync(TokenType.Bot, Program.Config.BotToken);
 			await Client.StartAsync();
-			new Thread(() => RefreshStats()).Start();
+			await Task.Run(() => RefreshStats());
 			await Task.Delay(-1);
 		}
 
@@ -62,6 +64,23 @@ namespace BlueAngel
 				Program.Log("Starting loop.");
 				for (; ; )
 				{
+					try
+                    {
+						string[] allFiles = Directory.GetFiles($"{Directory.GetCurrentDirectory()}/reminders/", "*.txt");
+						foreach (string txt in allFiles)
+						{
+							string[] lines = File.ReadAllLines(txt);
+							if (DateTime.Parse(lines[1]) < DateTime.UtcNow)
+							{
+								await Extentions.DIMessage(lines[0] + " " + lines[2], false, null, ulong.Parse(lines[3]), ulong.Parse(lines[4]));								
+								File.Delete(txt);
+							}
+						}
+					}
+					catch(Exception e)
+                    {
+						Program.Error("Reminder check error: " + e);
+                    }				
 					if ((bool)clan.IsWarLogPublic)
 					{
 						#region ClanWar
@@ -122,23 +141,27 @@ namespace BlueAngel
 								if(temp.Last() != "#0") mainTag.Add(temp.Last());
                             }
 							rounds = mainTag.Count();
+							if (rounds != 0) continue;
+							else prevRound = 0;
 							if(prevRound < rounds)
                             {
 								await Extentions.DIMessage("<@> A new CWL Round has been unlocked!");
 								prevRound = rounds;
 							}
-							ClanWarLeagueWar warLeague = await coc.Clans.GetClanWarLeagueWarAsync(mainTag[(int)rounds - 1]);
+							ClanWarLeagueWar warLeague = await coc.Clans.GetClanWarLeagueWarAsync(mainTag[(int)rounds - 2]);
 							if (warLeague.EndTime > DateTime.UtcNow)
 							{
 								if (!announcedCWL1hLeft && warLeague.EndTime.AddHours(-1) < DateTime.UtcNow)
 								{
-									await Extentions.DIMessage("<@> War day has one hour remaining!");
+									await Extentions.DIMessage("<@> War day has one hour remaining!", false, null, 727369782638149754, 727370227230441524);
 									announcedCWL1hLeft = true;
+									Program.Log("Announcing CWL1H reminder.", true);
 								}
 							}
 							if (warLeague.EndTime < DateTime.UtcNow)
 							{
 								announcedCWL1hLeft = false;
+								Program.Log("Resetting CWL1H reminder.", true);
 							}
 						}
 						catch (Exception exce)
@@ -147,7 +170,7 @@ namespace BlueAngel
 						}
 						#endregion
 					}
-					await Task.Delay(30000);
+					await Task.Delay(2000);
 				}
 			}
 			catch (Exception e)
@@ -163,7 +186,7 @@ namespace BlueAngel
 
 			string message = msg.Content.Substring(1).ToLower();
 			CommandContext context = new CommandContext(Client, (IUserMessage)msg);
-			await HandleCommand(context, message);
+			await Task.Run(() => HandleCommand(context, message));
 		}
 
 		public async Task HandleCommand(ICommandContext ctx, string message)
@@ -185,19 +208,21 @@ namespace BlueAngel
 						{
 						{ "help", "It's the help about the help to help you." },
 						{ "ping", "Replies with the bots current latency." },
-						{ "clan", "A lookup tool for this and other clans statistics.\nUsage: view clan [Clan ID]\nExample: view clan #2VPJQP0J" },
-						{ "player", "A lookup tool for player statistics.\nUsage: view player {Player ID}\nExample: view player #J8R2QQ98" },
-						{ "top", "Shows top players in the clan for the specified option.\nUsage: view top {donations/trophies/bhtrophies}\nExample: view top donations" },
+						{ "clan", "A lookup tool for this and other clans statistics.\nUsage: clan [Clan ID]\nExample: clan #2VPJQP0J" },
+						{ "player", "A lookup tool for player statistics.\nUsage: player {Player ID}\nExample: player #J8R2QQ98" },
+						{ "top", "Shows top players in the clan for the specified option.\nUsage: top {donations/trophies/bhtrophies}\nExample: top donations" },
+						{ "remind", "Sends the set message after the specified amount of time.\nUsage: remind {time|s/m/h/d} {message}\nExample: remind 10m Don't fail my attack" }
 						};
-						embed.WithTitle("Help");
 						try
 						{
+							embed.WithTitle("Help");
 							if (args[1] != null)
 							{
 								helpDict.TryGetValue(args[1].ToLower(), out string descript);
 								if (descript == null)
 									descript = "Command not found.";
 								embed.WithDescription(descript);
+								embed.WithTitle("Help - " + args[1].FirstCharToUpper());
 							}
 						}
 						catch (IndexOutOfRangeException)
@@ -215,8 +240,8 @@ namespace BlueAngel
 						try
 						{
 							try { if (args[1] != null) clan = await coc.Clans.GetClanAsync(args[1]); }
-							catch (ArgumentException) { try { clan = await coc.Clans.GetClanAsync("#" + args[1]); } catch (ClashOfClans.Core.ClashOfClansException) { await ctx.Channel.SendMessageAsync("Please enter a valid clan ID."); return; } }
-							catch (ClashOfClans.Core.ClashOfClansException) { await ctx.Channel.SendMessageAsync("Please enter a valid clan ID."); return; }
+							catch (ArgumentException) { try { clan = await coc.Clans.GetClanAsync("#" + args[1]); } catch (ClashOfClansException) { await ctx.Channel.SendMessageAsync("Please enter a valid clan ID."); return; } }
+							catch (ClashOfClansException) { await ctx.Channel.SendMessageAsync("Please enter a valid clan ID."); return; }
 							catch (IndexOutOfRangeException) { }
 
 							embed.WithTitle(clan.Name);
@@ -231,42 +256,199 @@ namespace BlueAngel
 						catch (Exception e)
 						{
 							Program.Error("Clan Error: " + e);
-							await ctx.Channel.SendMessageAsync("<@250429949410934786> An internal error has occured.");
+							await ctx.Channel.SendMessageAsync("An internal error has occured.");
 						}
 						break;
 					case "player":
 						try
 						{
-							await ctx.Channel.SendMessageAsync("Command is currently under construction!");
+							Player player = await coc.Players.GetPlayerAsync("#9QCVUR0QQ");
+							try { if (args[1] != null) player = await coc.Players.GetPlayerAsync(args[1].ToUpper()); }
+							catch (ArgumentException) { try { player = await coc.Players.GetPlayerAsync("#" + args[1].ToUpper()); } catch (ClashOfClansException) { await ctx.Channel.SendMessageAsync("Please enter a valid player ID."); return; } }
+							catch (ClashOfClansException) { await ctx.Channel.SendMessageAsync("Please enter a valid player ID."); return; }
+							catch (IndexOutOfRangeException) { }
+
+							embed.WithTitle(player.Name);
+							embed.WithThumbnailUrl(player.League.IconUrls.Medium.ToString());
+							embed.AddField("Player Tag", player.Tag);
+							embed.AddField("Clan Name", player.Clan.Name);
+							embed.AddField("Town Hall", player.TownHallLevel);
+							await ctx.Channel.SendMessageAsync(null, false, embed.Build());
 						}
 						catch (Exception e)
 						{
-							Program.Error("Player Error " + e);
-							await ctx.Channel.SendMessageAsync("<@250429949410934786> An internal error has occured.");
+							Program.Error("Player Error: " + e);
+							await ctx.Channel.SendMessageAsync("An internal error has occured.");
 						}
 						break;
 					case "top":
 						try
 						{
-							await ctx.Channel.SendMessageAsync("Command is currently under construction!");
+							//await ctx.Channel.SendMessageAsync("Command is currently under construction!");
+							//return;
+							try { if (args[2] != null) clan = await coc.Clans.GetClanAsync(args[2]); }
+							catch (ArgumentException) { try { clan = await coc.Clans.GetClanAsync("#" + args[2]); } catch (ClashOfClansException) { await ctx.Channel.SendMessageAsync("Please enter a valid clan ID."); return; } }
+							catch (ClashOfClansException) { await ctx.Channel.SendMessageAsync("Please enter a valid clan ID."); return; }
+							catch (IndexOutOfRangeException) { }
+							List<TopTracker> scores = new List<TopTracker>();							
+							try
+                            {
+								switch (args[1])
+								{
+                                    #region Donations
+                                    case "d":
+									case "donate":
+									case "donation":
+									case "donations":
+										foreach (ClanMember v in clan.MemberList)
+										{
+											scores.Add(new TopTracker() { playerName = v.Name, score = (int)v.Donations });
+										}
+										TopTracker[] topDonators = GetHighScores(scores, 10);
+										string sortedD = "Top Donators\n------------------------";
+										for (int i = 0; i < topDonators.Length; i++)
+										{
+											sortedD += Environment.NewLine + topDonators[i].playerName + " - " + topDonators[i].score;
+										}
+										embed.WithDescription(sortedD);
+										await ctx.Channel.SendMessageAsync(null, false, embed.Build());
+										break;
+                                    #endregion
+                                    #region Trophies
+                                    case "t":
+									case "trophy":
+									case "trophies":
+										foreach (ClanMember v in clan.MemberList)
+										{
+											scores.Add(new TopTracker() { playerName = v.Name, score = (int)v.Trophies });
+										}
+										TopTracker[] topTrophies = GetHighScores(scores, 10);
+										string sortedT = "Top Trophies\n------------------------";
+										for (int i = 0; i < topTrophies.Length; i++)
+										{
+											sortedT += Environment.NewLine + topTrophies[i].playerName + " - " + topTrophies[i].score;
+										}
+										embed.WithDescription(sortedT);
+										await ctx.Channel.SendMessageAsync(null, false, embed.Build());
+										break;
+                                    #endregion
+                                    #region Builder Hall Trophies
+                                    case "bh":
+									case "bht":
+									case "bhtrophies":
+										foreach (ClanMember v in clan.MemberList)
+										{
+											scores.Add(new TopTracker() { playerName = v.Name, score = (int)v.VersusTrophies });
+										}
+										TopTracker[] topBHTrophies = GetHighScores(scores, 10);
+										string sortedBHT = "Top BH Trophies\n------------------------";
+										for (int i = 0; i < topBHTrophies.Length; i++)
+										{
+											sortedBHT += Environment.NewLine + topBHTrophies[i].playerName + " - " + topBHTrophies[i].score;
+										}
+										embed.WithDescription(sortedBHT);
+										await ctx.Channel.SendMessageAsync(null, false, embed.Build());
+										break;
+                                    #endregion
+								}
+							}
+							catch (IndexOutOfRangeException)
+							{
+								foreach (var v in clan.MemberList)
+								{
+									scores.Add(new TopTracker() { playerName = v.Name, score = (int)v.Trophies });
+								}
+								TopTracker[] topTrophies2 = GetHighScores(scores, 10);
+								string sortedT2 = "Top Trophies\n------------------------";
+								for (int i = 0; i < topTrophies2.Length; i++)
+								{
+									sortedT2 += Environment.NewLine + topTrophies2[i].playerName + " - " + topTrophies2[i].score;
+								}
+								embed.WithDescription(sortedT2);
+								await ctx.Channel.SendMessageAsync(null, false, embed.Build());
+							}
+							catch (Exception e)
+                            {
+								Program.Error("Top Error [Switch]: " + e);
+								await ctx.Channel.SendMessageAsync("An internal error has occured.");
+							}								
 						}
 						catch (Exception e)
 						{
-							Program.Error("Top Error " + e);
-							await ctx.Channel.SendMessageAsync("<@250429949410934786> An internal error has occured.");
+							Program.Error("Top Error: " + e);
+							await ctx.Channel.SendMessageAsync("An internal error has occured.");
 						}
 						break;
 					case "remind":
+					case "remindme":
 					case "reminder":
 						try
 						{
-							var split = args[1].ToCharArray();
-
-
+							//await ctx.Channel.SendMessageAsync("Command under construction!");
+							//return;
+							args = ctx.Message.Content.Substring(1).Split(' ');
+							char[] split = args[1].ToLower().ToCharArray();
+							char lastChar = split.Last();						
+							int timeInMilliseconds = new int();
+							if(!char.IsNumber(lastChar))
+                            {
+								string time = args[1].Substring(0, args[1].Length - 1);
+								if (!int.TryParse(time, out int parsedTime) || parsedTime <= 0)
+								{
+									await ctx.Channel.SendMessageAsync("Please enter a valid time.");
+									return;
+								}
+								switch (lastChar)
+                                {
+									case 's':
+										timeInMilliseconds = parsedTime * 1000;
+										break;
+									case 'm':
+										timeInMilliseconds = parsedTime * 60000;
+										break;
+									case 'h':
+										timeInMilliseconds = parsedTime * 3600000;
+										break;
+									case 'd':
+										timeInMilliseconds = parsedTime * 86400000;
+										break;
+									default:
+										timeInMilliseconds = parsedTime * 1000;
+										break;
+                                }
+							}
+							else
+                            {
+								if (!int.TryParse(args[1], out int parsedTime) || parsedTime <= 0)
+								{
+									await ctx.Channel.SendMessageAsync("Please enter a valid time.");
+									return;
+								}
+								timeInMilliseconds = parsedTime * 1000;
+							}
+							string origMsg = string.Empty;
+							foreach (var v in args)
+                            {
+								if (v != args[0] && v != args[1])
+									origMsg += v + " ";
+                            }
+							await ctx.Channel.SendMessageAsync("I will remind you in " + timeInMilliseconds / 1000 + " seconds: " + origMsg);
+							string path = $"{Directory.GetCurrentDirectory()}/reminders/{DateTime.UtcNow.Ticks}.txt";
+							File.Create(path).Close();
+							string[] write = new[]
+							{
+								ctx.Message.Author.Mention,
+								$"{DateTime.UtcNow.AddMilliseconds(timeInMilliseconds)}",
+								origMsg,
+								ctx.Guild.Id.ToString(),
+								ctx.Channel.Id.ToString(),							
+							};
+							File.WriteAllLines(path, write);
 						}
-						catch (IndexOutOfRangeException)
+						catch (Exception e)
 						{
-							await ctx.Channel.SendMessageAsync("No.");
+							Program.Error("Reminder Error: " + e);
+							await ctx.Channel.SendMessageAsync("An internal error has occured.");
 						}
 						break;
 				}
@@ -277,5 +459,16 @@ namespace BlueAngel
 				await ctx.Channel.SendMessageAsync("There was an error handling the command.");
 			}
 		}
+
+		TopTracker[] GetHighScores(List<TopTracker> list, int count)
+        {
+			return list.OrderByDescending(x => x.score).Take(count).ToArray();
+		}
 	}
-}
+
+	public class TopTracker
+	{
+		public string playerName { get; set; }
+		public int score { get; set; }
+	}
+}	
