@@ -6,6 +6,7 @@
 |:----------------------:|:--------------------:|:-----------------------------------:|
 | `help` | Used to get help about all commands. | +help |
 | `ping` | Gets the bots current latency. | +ping |
-| `clan` | View clan specific information. | +view clan \{#ClanTag\} |
-| `player` | View player specific information. | +view player \{#PlayerTag\} |
-| `top` | Gets the top players of a specific clan. | +top \{#ClanTag\} |
+| `clan` | View clan specific information. | +clan \{#ClanTag\} |
+| `player` | View player specific information. | +player \{#PlayerTag\} |
+| `top` | Gets the top players of a specific clan. | +top \{d/bh/t\} \{#ClanTag\} |
+| `remind` | Sets a reminder to be sent after a specified time amount. | +remind \{time\|s/m/h/d\} \{message\} |
