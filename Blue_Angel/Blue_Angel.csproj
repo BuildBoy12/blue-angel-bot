@@ -25,21 +25,6 @@
     <Reference Include="Discord.Net.WebSocket">
       <HintPath>..\..\Minecraft Bot Code V2\MinecraftBot\MinecraftBot\bin\Debug\netcoreapp3.1\Discord.Net.WebSocket.dll</HintPath>
     </Reference>
-    <Reference Include="DnsClient">
-      <HintPath>..\..\..\Personal Plugins\DI DataBase\DI DataBase Bot\bin\Debug\netcoreapp3.1\DnsClient.dll</HintPath>
-    </Reference>
-    <Reference Include="MongoDB.Bson">
-      <HintPath>..\..\..\Personal Plugins\DI DataBase\DI DataBase Bot\bin\Debug\netcoreapp3.1\MongoDB.Bson.dll</HintPath>
-    </Reference>
-    <Reference Include="MongoDB.Driver">
-      <HintPath>..\..\..\Personal Plugins\DI DataBase\DI DataBase Bot\bin\Debug\netcoreapp3.1\MongoDB.Driver.dll</HintPath>
-    </Reference>
-    <Reference Include="MongoDB.Driver.Core">
-      <HintPath>..\..\..\Personal Plugins\DI DataBase\DI DataBase Bot\bin\Debug\netcoreapp3.1\MongoDB.Driver.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="MongoDB.Libmongocrypt">
-      <HintPath>..\..\..\Personal Plugins\DI DataBase\DI DataBase Bot\bin\Debug\netcoreapp3.1\MongoDB.Libmongocrypt.dll</HintPath>
-    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\..\Minecraft Bot Code V2\MinecraftBot\MinecraftBot\bin\Debug\netcoreapp3.1\Newtonsoft.Json.dll</HintPath>
     </Reference>
